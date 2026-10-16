@@ -1,21 +1,26 @@
-# Semantic Segmentation Live Demo (v2, beginner-friendly)
+# Semantic Segmentation Live Demo (fixed: detects roads, buildings, windows, grass...)
 
-Web demo for **Topics 3.2 Segmentation Techniques > Semantic Segmentation** (Flask + PyTorch + OpenCV).
+## What was wrong
+The first versions used DeepLabV3/FCN models trained on **Pascal VOC**, which only know 20 object kinds
+(person, car, dog, bus, ...) plus "background". Roads, buildings, windows, grass, sky and walls are not in
+that list, so they were all painted as **background**.
+
+## The fix
+The default models are now **SegFormer** networks trained on **ADE20K** (150 scene kinds: wall, building, sky,
+floor, tree, road, windowpane, grass, sidewalk, person, car, door, ...). The model menu offers:
+- SegFormer-B2 ADE20K: best quality (~110 MB download, first run only)
+- SegFormer-B0 ADE20K: fast (~15 MB)
+- SegFormer-B0 Cityscapes: 19 street kinds (road, sidewalk, building, car, pole, sign, vegetation, sky...)
+- DeepLabV3 and FCN (VOC, objects only): kept to show the difference
+Models without a background class are handled everywhere (overlay, counts, scores). Models are downloaded from
+huggingface.co on first use, so the first run needs internet.
 
 ## Run
-**Windows:** double-click `run.bat`. **Manual:** `pip install -r requirements.txt`, `python app.py`, open http://127.0.0.1:5000
-The first run downloads pretrained weights once (DeepLabV3-MobileNet ~42 MB, FCN-ResNet50 ~135 MB). CPU only is fine.
-Sample photos download into `samples/` (or add your own .jpg/.png).
+Windows: double-click `run.bat`, or run `powershell -ExecutionPolicy Bypass -File ./run.ps1` from PowerShell. Linux/macOS: run `./run.sh`.
+The launchers create a local virtual environment, install the requirements, and use its Python automatically.
+Then open http://127.0.0.1:5000.
 
-## Tabs (use them in this order)
-1. **The idea** - a 96-pixel toy picture (camera view vs the computer's labels), the "votes" idea, and a plain-word glossary. Works with no photo.
-2. **Try it** - real photo. Views: colors on photo, colors only, before/after slider, "how sure is the computer?" heatmap. The **pixel inspector** magnifies the real pixels under the mouse and shows the model's top-3 votes for that pixel. Click a class to isolate it. A plain-English summary appears under the picture.
-3. **Compare** - semantic vs instance vs panoptic, with object counts (instance/panoptic are approximated with connected components).
-4. **Score it** - click a 4x4 grid to see pixel accuracy, IoU, mean IoU and Dice change live; the "lazy computer" shows why accuracy alone can fool us. Then repeat on a real photo.
-5. **Inside the network** - your photo shrunk step by step and grown back colored, plus the U-Net diagram with encoder, bottleneck, decoder and skip connections.
+Use photos of streets, buildings, rooms or parks. Note: Cityscapes has no "window" class; use the ADE20K models for windows.
 
-"Large text" (top right) enlarges everything for a projector.
-
-## Files
-`app.py` (server + models) - `static/index.html` (interface) - `requirements.txt` - `run.bat` / `run.sh`
-Labels: the 20 Pascal VOC classes plus background.
+## Tabs
+1 The idea - 2 Try it (pixel inspector, confidence heatmap, before/after) - 3 Compare - 4 Score it - 5 Inside the network
