@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Semantic Segmentation, explained</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#101c40;--slate:#8fa5c4;--mist:#dce3ed;--paper:#f0f0f0;--ink:#1b2236;--blue:#a7bcdc;--warm:#f2a541;font-family:Montserrat,"Segoe UI",system-ui,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink)}body.big{zoom:1.18}
+header{display:flex;align-items:center;gap:22px;padding:16px 32px;flex-wrap:wrap}
+.brand{font-weight:800;line-height:1.1;color:var(--navy)}.brand span{font-weight:400;display:block}
+nav{display:flex;border:2.5px solid var(--navy);border-radius:40px;padding:5px;gap:4px;background:#fff;flex-wrap:wrap}
+nav button,.ghost{border:0;background:none;font:500 14px Montserrat,sans-serif;padding:9px 20px;border-radius:30px;cursor:pointer;color:var(--navy)}
+nav button.on{background:var(--navy);color:#fff;font-weight:700}.ghost{border:2px solid var(--navy);margin-left:auto}
+button:focus-visible{outline:3px solid var(--warm);outline-offset:2px}
+main{padding:0 32px 56px;max-width:1280px;margin:auto}
+h1{font-size:clamp(28px,4.2vw,50px);color:var(--navy);margin:6px 0 6px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+h2{color:var(--navy);margin:0 0 6px}h3{color:var(--navy);margin:6px 0}.lede{max-width:70ch;margin:0 0 20px;line-height:1.6;font-size:16px}
+.tab{display:none}.tab.on{display:block}
+.grid{display:grid;grid-template-columns:250px 1fr 310px;gap:20px;align-items:start}@media(max-width:1050px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--mist);border-radius:24px;padding:18px}.panel h3{font-size:15px;margin-top:0}
+.panel>label{display:block;font-weight:700;font-size:13px;margin:14px 0 6px;color:var(--navy)}.panel>label:first-child{margin-top:0}
+select,input[type=file]{width:100%;padding:9px;border-radius:12px;border:1px solid var(--slate);background:#fff;font:inherit;font-size:13px}
+.btn{background:var(--navy);color:#fff;border:0;border-radius:30px;padding:12px 22px;font:700 14px Montserrat,sans-serif;cursor:pointer;margin-top:12px}
+.btn.full{width:100%}.btn:disabled{opacity:.5;cursor:wait}.btn.alt{background:#fff;color:var(--navy);border:2px solid var(--navy)}
+.samples{display:flex;flex-wrap:wrap;gap:6px}.samples img{width:56px;height:42px;object-fit:cover;border-radius:8px;cursor:pointer;border:3px solid transparent}.samples img.on{border-color:var(--navy)}
+.radios label{display:flex;gap:8px;font-weight:500;margin:5px 0;font-size:13px}
+.stage{background:#fff;border-radius:24px;padding:14px;position:relative;min-height:280px;display:grid;place-items:center}
+canvas{max-width:100%;height:auto;border-radius:12px;display:block}
+.status{font-size:13px;margin:10px 4px;min-height:20px}.err{color:#b3261e;font-weight:700}
+.plain{background:var(--blue);border-radius:20px;padding:14px 18px;margin:16px 0;line-height:1.55;font-size:14.5px}.plain b:first-child{color:var(--navy)}
+.sum{background:#fff;border-radius:18px;padding:14px 18px;line-height:1.6;font-size:15px;margin-top:12px}
+.legend{display:grid;gap:6px;max-height:300px;overflow:auto}
+.chip{display:grid;grid-template-columns:18px 1fr auto;gap:8px;align-items:center;background:#fff;border:2px solid transparent;border-radius:14px;padding:7px 10px;font:500 13px Montserrat,sans-serif;text-align:left;cursor:pointer}
+.chip.on{border-color:var(--navy)}.chip i{width:18px;height:18px;border-radius:6px;border:1px solid #0003}
+.bar{grid-column:1/4;height:6px;border-radius:4px;background:var(--mist)}.bar b{display:block;height:100%;border-radius:4px;background:var(--navy)}
+#mag{width:144px;height:144px;image-rendering:pixelated;border:3px solid var(--navy);border-radius:10px;background:#fff}
+.vote{display:grid;grid-template-columns:96px 1fr 40px;gap:8px;align-items:center;font-size:13px;margin:5px 0}.vote div{height:12px;border-radius:6px;background:#fff;overflow:hidden}.vote b{display:block;height:100%}.vote em{font-style:normal;font-weight:700;text-align:right}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}@media(max-width:900px){.cards{grid-template-columns:1fr}}
+.card{background:#fff;border-radius:24px;padding:16px}.card p{font-size:14px;line-height:1.55;margin:6px 2px}
+.step{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;font-weight:800;margin-right:8px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:center}@media(max-width:900px){.two{grid-template-columns:1fr}}
+.gl{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.gl div{background:var(--mist);border-radius:16px;padding:12px 14px;font-size:13.5px;line-height:1.45}.gl b{color:var(--navy);display:block}
+.g4{display:grid;grid-template-columns:repeat(4,64px);gap:4px}.g4 button{width:64px;height:64px;border-radius:10px;border:3px solid transparent;background:var(--mist);cursor:pointer;font-size:11px;font-weight:700;color:#fff}
+.g4 button.p{background:var(--navy)}.g4 button.t{border-color:var(--warm)}
+.kpis{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}.kpi{background:var(--navy);color:#fff;border-radius:22px;padding:12px 22px;min-width:150px;font-size:13px}.kpi b{display:block;font-size:32px;font-weight:800}.kpi.alt{background:var(--slate)}
+table{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border-radius:16px;overflow:hidden}th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--mist)}th{background:var(--mist);color:var(--navy)}
+.mini{display:inline-block;width:100px;height:8px;background:var(--mist);border-radius:4px;vertical-align:middle;margin-right:8px}.mini b{display:block;height:100%;background:var(--navy);border-radius:4px}
+.strip{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}.strip figure{margin:0;text-align:center;font-size:12.5px;font-weight:700;color:var(--navy)}.strip canvas{width:170px;image-rendering:pixelated;margin-bottom:4px}
+svg text{font-family:Montserrat,sans-serif}
+</style></head><body>
+<header><div class="brand">THYNK<span>UNLIMITED.</span></div>
+<nav id="nav"><button class="on" data-t="idea">1 The idea</button><button data-t="try">2 Try it</button><button data-t="compare">3 Compare</button><button data-t="score">4 Score it</button><button data-t="inside">5 Inside the network</button></nav>
+<button class="ghost" id="big">Large text</button></header>
+<main>
+
+<section class="tab on" id="idea">
+<h1>Teaching a computer to name every pixel</h1>
+<p class="lede">When you look at a photo you instantly see a person, a road and the sky. A computer only sees a grid of tiny colored dots. Semantic segmentation is how it learns to say what each dot belongs to.</p>
+<div class="cards">
+<div class="card"><h3><span class="step">1</span>A photo is a grid of dots</h3><p>Each dot is called a pixel. It has a color but no meaning. The computer does not know it is part of a tree.</p></div>
+<div class="card"><h3><span class="step">2</span>A trained model names each dot</h3><p>The model practiced on thousands of photos where people had already colored every dot by hand, until it could do it on new photos.</p></div>
+<div class="card"><h3><span class="step">3</span>Same kind, same color</h3><p>All cars share one color, all people share another. The result is a colored map of the picture called a mask.</p></div></div>
+<h2 style="margin-top:28px">See it on a tiny picture</h2>
+<div class="two"><div class="card"><canvas id="toy" width="432" height="288"></canvas>
+<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn alt" id="t0">What the camera records</button><button class="btn" id="t1">What the computer answers</button></div></div>
+<div><div class="plain"><b>In plain words:</b> this toy picture has only 96 pixels. Switch between the two views. The camera view is just colors. The answer view gives every pixel a name: sky, sun, tree, house, grass or road. A real photo works the same way, with hundreds of thousands of pixels.</div>
+<h3>How does one pixel choose its name?</h3>
+<p style="font-size:14px;line-height:1.5;margin:0 0 8px">The model gives every possible label a percentage, like votes. The biggest vote wins.</p>
+<div class="vote"><span>person</span><div><b style="width:66%;background:#101c40"></b></div><em>66%</em></div>
+<div class="vote"><span>dog</span><div><b style="width:24%;background:#8fa5c4"></b></div><em>24%</em></div>
+<div class="vote"><span>background</span><div><b style="width:10%;background:#8fa5c4"></b></div><em>10%</em></div>
+<p style="font-size:14px;margin:8px 0">Winner: <b>person</b>. The model repeats this for every pixel.</p>
+<button class="btn" data-go="try">Try it on a real photo</button></div></div>
+<h2 style="margin-top:28px">Words you will hear</h2>
+<div class="gl"><div><b>Pixel</b>One tiny dot of a picture.</div><div><b>Label or class</b>The name given to a pixel, such as person or car.</div><div><b>Model</b>The trained program that makes the guesses.</div><div><b>Mask</b>The colored map of labels laid over the photo.</div><div><b>Ground truth</b>The correct answer, colored by humans.</div><div><b>IoU</b>A score for how well two shapes overlap.</div></div>
+</section>
+
+<section class="tab" id="try"><div class="grid">
+ <div class="panel"><label>Photo</label><input type="file" id="file" accept="image/*">
+  <label>Or pick a sample</label><div class="samples" id="samples"></div>
+  <label>Model</label><select id="model"></select>
+  <button class="btn full" id="run">Segment image</button>
+  <label>View</label><div class="radios">
+   <label><input type="radio" name="view" value="overlay" checked> Colors on the photo</label>
+   <label><input type="radio" name="view" value="mask"> Colors only</label>
+   <label><input type="radio" name="view" value="wipe"> Before and after slider</label>
+   <label><input type="radio" name="view" value="conf"> How sure is the computer?</label>
+   <label><input type="radio" name="view" value="orig"> Original photo</label></div>
+  <div id="vhint" style="font-size:12.5px;line-height:1.4;margin-top:6px"></div>
+  <label>Color strength <span id="av">55</span>%</label><input type="range" id="alpha" min="0" max="100" value="55" style="width:100%">
+  <div id="wipebox" style="display:none"><label style="margin-top:12px;font-weight:700;font-size:13px">Slide</label><input type="range" id="wipe" min="0" max="100" value="50" style="width:100%"></div>
+ </div>
+ <div><div class="stage"><canvas id="cv" width="640" height="420"></canvas></div>
+  <div class="status" id="status">Pick a photo or a sample, then press Segment image. Then move your mouse over the picture.</div>
+  <div class="sum" id="summary" style="display:none"></div></div>
+ <div>
+  <div class="panel"><h3>Pixel inspector</h3><div style="display:flex;gap:12px;align-items:flex-start"><canvas id="mag" width="144" height="144"></canvas><div style="font-size:12.5px;line-height:1.45">Move the mouse over the picture. This magnifier shows the real pixels around it, each tinted with its label color.</div></div>
+   <p id="pxname" style="font-weight:700;font-size:13.5px;margin:10px 0 4px;color:var(--navy)">Hover over the picture.</p><div id="votes"></div></div>
+  <div class="panel" style="margin-top:16px"><h3>What was found (click one to isolate it)</h3><div class="legend" id="legend"><span style="font-size:13px">Nothing yet.</span></div></div></div>
+</div>
+<div class="plain"><b>In plain words:</b> the computer does not draw outlines. It decides one pixel at a time and shows how sure it is. Doubt is highest at the edges of objects.</div></section>
+
+<section class="tab" id="compare"><h2>Same photo, three levels of detail</h2>
+<p class="lede">Run a photo in step 2 first. Each version answers a different question.</p>
+<div class="cards">
+ <div class="card"><h3>Semantic: what is it?</h3><canvas id="c1"></canvas><p>Every pixel gets a kind. Two people standing together share one color.</p></div>
+ <div class="card"><h3>Instance: which one is it?</h3><canvas id="c2"></canvas><p>Every separate object gets its own color, so you can count them.</p></div>
+ <div class="card"><h3>Panoptic: both</h3><canvas id="c3"></canvas><p>Kind colors with a white outline around each object.</p></div></div>
+<div class="plain"><b>In plain words:</b> semantic tells you "there are people here". Instance tells you "there are 2 people". This demo builds the instance view by separating blobs of the same color, so people standing very close can merge into one. Real instance models solve that.</div>
+<div id="instInfo"></div></section>
+
+<section class="tab" id="score"><h2>How do we know if it is good?</h2>
+<p class="lede">We compare the computer's answer with the correct answer. Try it yourself on a picture with 16 pixels.</p>
+<div class="two"><div class="card"><h3>The tiny test picture</h3>
+<p>The orange outline marks where the real object is (2 pixels). Dark squares are where the computer says "object". Click squares to change its answer.</p>
+<div class="g4" id="g4"></div>
+<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn alt" data-p="lazy">Lazy computer</button><button class="btn alt" data-p="perfect">Perfect</button><button class="btn alt" data-p="sloppy">One extra pixel</button><button class="btn alt" data-p="all">Says everything</button></div></div>
+<div><div class="kpis" id="gk"></div><div class="plain" id="gverdict"></div></div></div>
+<div class="gl" style="margin:18px 0"><div><b>Pixel accuracy</b>The test score: what share of all pixels are right.</div><div><b>IoU</b>Overlap divided by everything covered by the two shapes. 1 is a perfect match, 0 is no overlap.</div><div><b>Mean IoU</b>IoU averaged over all kinds, so small things count as much as big ones.</div><div><b>Dice</b>A similar overlap score that is a little more generous.</div></div>
+<h2 style="margin-top:26px">Now on a real photo</h2>
+<div class="panel" style="display:flex;gap:16px;flex-wrap:wrap;align-items:end">
+ <div><label style="font-weight:700;font-size:13px;display:block;margin-bottom:6px">Pretend the computer made this mistake</label><select id="mmode"><option value="drop">It misses one kind of object</option><option value="background">It says everything is background</option></select></div>
+ <div id="dropbox"><label style="font-weight:700;font-size:13px;display:block;margin-bottom:6px">Which kind</label><select id="mdrop"></select></div>
+ <button class="btn" id="mrun" style="margin:0">Compute scores</button></div>
+<div id="mout"></div></section>
+
+<section class="tab" id="inside"><h2>What happens inside the network</h2>
+<p class="lede">The network first shrinks the picture to understand it, then grows it back to color every pixel. Shortcuts carry small details across.</p>
+<div class="card"><h3>Shrink to understand, grow to draw</h3><div class="strip" id="shrink"><span style="font-size:14px">Run a photo in step 2 to see this with your own picture.</span></div></div>
+<div class="card" style="margin-top:18px"><h3>The U-Net shape</h3><svg id="svg" viewBox="0 0 790 350" width="100%" role="img" aria-label="U-Net diagram"></svg></div>
+<div class="cards" style="margin-top:18px">
+ <div class="card"><h3>Encoder: read and summarize</h3><p>Like reading a book and writing a short summary. The picture gets smaller but the meaning gets clearer.</p></div>
+ <div class="card"><h3>Decoder: rewrite the story</h3><p>It grows the summary back to full size and colors every pixel.</p></div>
+ <div class="card"><h3>Skip connections: sticky notes</h3><p>Fine details like edges are passed straight across, so the final outlines stay sharp.</p></div></div>
+<div class="plain"><b>In plain words:</b> a "fully convolutional" network keeps the picture layout all the way through, so it can answer for every pixel instead of giving one answer for the whole photo. The two models here are FCN-ResNet50 and DeepLabV3, trained on 20 kinds of objects plus background.</div></section>
+</main>
+<script>
+const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s),pct=v=>(v*100).toFixed(1)+'%';
+let R=null,IM={},idd,prd,tpd,imd,oc,focus=null,sample=null,confImg=null,COL={};
+const load=s=>new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=s});
+const data=i=>{const c=document.createElement('canvas');c.width=i.width;c.height=i.height;const x=c.getContext('2d');x.drawImage(i,0,0);return x.getImageData(0,0,i.width,i.height).data};
+const say=(t,e)=>{$('#status').textContent=t;$('#status').className='status'+(e?' err':'')};
+function tab(t){$$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));$$('.tab').forEach(s=>s.classList.toggle('on',s.id===t));if(t==='inside')shrink();if(t==='compare'&&R)drawCompare()}
+$$('#nav button').forEach(b=>b.onclick=()=>tab(b.dataset.t));$$('[data-go]').forEach(b=>b.onclick=()=>tab(b.dataset.go));
+$('#big').onclick=()=>document.body.classList.toggle('big');
+/* ---- idea tab: toy picture ---- */
+const TOY=['SSSSSSSSOOSS','SSSSSSSSOOSS','SSTTSSSSSSSS','STTTTSSHHHSS','SSTTSSHHHHHS','GGTTGGHHHHHG','GGGGGGGGGGGG','RRRRRRRRRRRR'];
+const TC={S:['sky','#8ecae6','#3a86ff'],O:['sun','#ffd166','#ff8c00'],T:['tree','#2d6a4f','#1b9aaa'],G:['grass','#74c69d','#06b36d'],H:['house','#bc6c25','#e63946'],R:['road','#6c757d','#7b2cbf']};
+function toy(lab){const c=$('#toy'),x=c.getContext('2d'),S=36;x.textAlign='center';x.font='700 11px Montserrat,sans-serif';
+ TOY.forEach((row,r)=>[...row].forEach((k,q)=>{const t=TC[k],j=((r*7+q*13)%5-2)*5;x.fillStyle=lab?t[2]:shade(t[1],j);x.fillRect(q*S,r*S,S,S);
+  if(lab){x.fillStyle='#fff';x.fillText(t[0],q*S+S/2,r*S+S/2+4)}x.strokeStyle='rgba(255,255,255,.35)';x.strokeRect(q*S,r*S,S,S)}))}
+function shade(h,d){const n=parseInt(h.slice(1),16),f=v=>Math.max(0,Math.min(255,v+d));return`rgb(${f(n>>16)},${f((n>>8)&255)},${f(n&255)})`}
+$('#t0').onclick=()=>toy(0);$('#t1').onclick=()=>toy(1);toy(0);
+/* ---- try tab ---- */
+fetch('/api/info').then(r=>r.json()).then(d=>{
+ $('#model').innerHTML=Object.entries(d.models).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+ $('#samples').innerHTML=d.samples.map(n=>`<img src="/samples/${n}" title="${n}" data-n="${n}">`).join('')||'<span style="font-size:12px">Downloading samples... reload in a moment, or upload a photo.</span>';
+ $$('#samples img').forEach(i=>i.onclick=()=>{$$('#samples img').forEach(x=>x.classList.remove('on'));i.classList.add('on');sample=i.dataset.n;$('#file').value=''})});
+$('#file').onchange=()=>{sample=null;$$('#samples img').forEach(x=>x.classList.remove('on'))};
+$('#run').onclick=async()=>{
+ const f=$('#file').files[0];if(!f&&!sample)return say('Choose a photo or a sample first.',1);
+ const fd=new FormData();f?fd.append('file',f):fd.append('sample',sample);fd.append('model',$('#model').value);
+ $('#run').disabled=true;say('The computer is looking at every pixel... the very first run may download the model (one time).');
+ try{const r=await fetch('/api/segment',{method:'POST',body:fd}),d=await r.json();if(d.error)throw Error(d.error);
+  R=d;focus=null;confImg=null;COL={};d.classes.forEach(c=>COL[c.id]=c.color);
+  for(const k of['image','overlay','ids','instances','panoptic','probs','tops'])IM[k]=await load(d[k]);
+  idd=data(IM.ids);prd=data(IM.probs);tpd=data(IM.tops);imd=data(IM.image);
+  oc=document.createElement('canvas');oc.width=d.width;oc.height=d.height;oc.getContext('2d').drawImage(IM.overlay,0,0);
+  legend();fillDrop();draw();summary();drawCompare();say('Done. Move your mouse over the picture, or try the other views on the left.');
+ }catch(e){say(e.message,1)}$('#run').disabled=false};
+function summary(){const fg=R.classes.filter(c=>c.id),bg=R.classes.find(c=>!c.id),s=$('#summary');s.style.display='block';
+ s.innerHTML=`The computer looked at <b>${(R.width*R.height).toLocaleString()}</b> pixels in <b>${R.ms} ms</b> and gave every one a label. It found ${fg.length?fg.map(c=>`<b>${c.name}</b> (${c.pct}%)`).join(', '):'no known objects'}${bg?`. The remaining ${bg.pct}% is background`:''}.`}
+function legend(){$('#legend').innerHTML=R.classes.map(c=>`<button class="chip" data-id="${c.id}"><i style="background:${c.id?`rgb(${c.color})`:'#000'}"></i><span>${c.name}</span><span>${c.pct}%</span><span class="bar"><b style="width:${Math.min(100,c.pct)}%"></b></span></button>`).join('');
+ $$('.chip').forEach(b=>b.onclick=()=>{const id=+b.dataset.id;focus=focus===id?null:id;$$('.chip').forEach(x=>x.classList.toggle('on',+x.dataset.id===focus));draw()})}
+const view=()=>document.querySelector('input[name=view]:checked').value;
+const VH={overlay:'Colors laid over the photo.',mask:'Only the computer\'s answer: one color per kind of thing.',orig:'The untouched photo.',conf:'Green means very sure, red means unsure. Doubt usually shows at the edges of objects.',wipe:'Drag the slider: left is the photo, right is the computer\'s answer.'};
+function conf(){if(confImg)return confImg;const w=R.width,h=R.height,im=new ImageData(w,h);
+ for(let i=0;i<w*h*4;i+=4){const t=Math.max(0,Math.min(1,(prd[i]/255-.4)/.6));im.data[i]=220*(1-t)+30*t;im.data[i+1]=60*(1-t)+170*t;im.data[i+2]=60*(1-t)+90*t;im.data[i+3]=255}return confImg=im}
+function focusLayer(){const s=document.createElement('canvas');s.width=R.width;s.height=R.height;const x=s.getContext('2d');x.drawImage(oc,0,0);const im=x.getImageData(0,0,R.width,R.height);
+ for(let i=0;i<idd.length;i+=4){if(idd[i]!==focus)im.data[i+3]=0;else{im.data[i+3]=255;if(!focus)im.data[i]=im.data[i+1]=im.data[i+2]=255}}x.putImageData(im,0,0);return s}
+function draw(){const v=view();$('#vhint').textContent=VH[v];$('#wipebox').style.display=v==='wipe'?'block':'none';if(!R)return;
+ const c=$('#cv'),x=c.getContext('2d');c.width=R.width;c.height=R.height;x.fillStyle='#000';x.fillRect(0,0,c.width,c.height);
+ if(v==='conf'){x.putImageData(conf(),0,0);return}
+ if(v!=='mask')x.drawImage(IM.image,0,0);if(v==='orig')return;
+ const src=focus===null?oc:focusLayer();
+ if(v==='wipe'){const w=Math.round(c.width*$('#wipe').value/100);x.save();x.beginPath();x.rect(w,0,c.width-w,c.height);x.clip();x.globalAlpha=.8;x.drawImage(src,0,0);x.restore();x.fillStyle='#fff';x.fillRect(w-1,0,2,c.height);return}
+ x.globalAlpha=v==='mask'?1:$('#alpha').value/100;x.drawImage(src,0,0);x.globalAlpha=1}
+$('#alpha').oninput=()=>{$('#av').textContent=$('#alpha').value;draw()};$('#wipe').oninput=draw;$$('input[name=view]').forEach(r=>r.onchange=draw);draw();
+$('#cv').onmousemove=e=>{if(!R)return;const c=$('#cv'),b=c.getBoundingClientRect(),px=Math.floor((e.clientX-b.left)*c.width/b.width),py=Math.floor((e.clientY-b.top)*c.height/b.height);if(px>=0&&py>=0&&px<R.width&&py<R.height)inspect(px,py)};
+function inspect(px,py){const w=R.width,i=(py*w+px)*4,m=$('#mag'),g=m.getContext('2d'),S=16;g.clearRect(0,0,144,144);
+ for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){const X=px+dx,Y=py+dy,ox=(dx+4)*S,oy=(dy+4)*S;
+  if(X<0||Y<0||X>=w||Y>=R.height){g.fillStyle='#ddd';g.fillRect(ox,oy,S,S);continue}
+  const j=(Y*w+X)*4,k=idd[j];g.fillStyle=`rgb(${imd[j]},${imd[j+1]},${imd[j+2]})`;g.fillRect(ox,oy,S,S);
+  if(k&&COL[k]){g.fillStyle=`rgba(${COL[k]},.6)`;g.fillRect(ox,oy,S,S)}g.strokeStyle='rgba(255,255,255,.4)';g.strokeRect(ox,oy,S,S)}
+ g.strokeStyle='#fff';g.lineWidth=3;g.strokeRect(4*S,4*S,S,S);g.strokeStyle='#101c40';g.lineWidth=1;g.strokeRect(4*S-2,4*S-2,S+4,S+4);
+ $('#pxname').textContent=`This pixel is labeled "${R.names[idd[i]]}". Its votes:`;
+ $('#votes').innerHTML=[0,1,2].map(n=>({id:tpd[i+n],p:prd[i+n]/255})).filter(t=>t.p>.005).map(t=>`<div class="vote"><span>${R.names[t.id]}</span><div><b style="width:${t.p*100}%;background:${t.id&&COL[t.id]?`rgb(${COL[t.id]})`:'#101c40'}"></b></div><em>${Math.round(t.p*100)}%</em></div>`).join('')}
+/* ---- compare tab ---- */
+function layer(id,img,a,full){const c=$(id),x=c.getContext('2d');c.width=R.width;c.height=R.height;if(!full)x.drawImage(IM.image,0,0);x.globalAlpha=a;x.drawImage(img,0,0);x.globalAlpha=1}
+function drawCompare(){layer('#c1',IM.overlay,.6);layer('#c2',IM.instances,.7);layer('#c3',IM.panoptic,1,true);
+ const f=R.classes.filter(c=>c.id);$('#instInfo').innerHTML=f.length?'<div class="sum"><b>Counted in this photo:</b> '+f.map(c=>`${c.name} x ${c.instances}`).join(', ')+'.</div>':''}
+/* ---- score tab ---- */
+const TRUTH=new Set([5,6]);let pred=Array(16).fill(0);
+function grid(){$('#g4').innerHTML=pred.map((p,i)=>`<button class="${p?'p':''} ${TRUTH.has(i)?'t':''}" data-i="${i}">${p?'object':''}</button>`).join('');
+ $$('#g4 button').forEach(b=>b.onclick=()=>{pred[+b.dataset.i]^=1;grid()});
+ let ok=0,io=0,iu=0,bi=0,bu=0,n=0;pred.forEach((p,i)=>{const t=TRUTH.has(i);if(!!p===t)ok++;if(t&&p)io++;if(t||p)iu++;if(!t&&!p)bi++;if(!t||!p)bu++;if(p)n++});
+ const iO=io/iu,iB=bu?bi/bu:0,dO=2*io/(2+n),dB=2*bi/((16-2)+(16-n));
+ $('#gk').innerHTML=`<div class="kpi">Pixel accuracy<b>${pct(ok/16)}</b></div><div class="kpi alt">Object IoU<b>${pct(iO)}</b></div><div class="kpi alt">Mean IoU<b>${pct((iO+iB)/2)}</b></div><div class="kpi alt">Mean Dice<b>${pct((dO+dB)/2)}</b></div>`;
+ $('#gverdict').innerHTML=!n?'<b>Look:</b> the computer found nothing, yet its accuracy is still 87.5% because most pixels are background. The IoU scores show the truth. That is why accuracy alone can fool us.':io===2&&n===2?'<b>Perfect.</b> Every score is 100%.':io===2?'<b>Object found,</b> but with extra pixels. Accuracy barely drops, while IoU shows the shape is not exact.':'<b>Try this:</b> click the two orange squares to find the object, then compare the scores.'}
+const PRE={lazy:[],perfect:[5,6],sloppy:[5,6,7],all:[...Array(16).keys()]};
+$$('[data-p]').forEach(b=>b.onclick=()=>{pred=Array(16).fill(0);PRE[b.dataset.p].forEach(i=>pred[i]=1);grid()});grid();
+function fillDrop(){$('#mdrop').innerHTML=R.classes.filter(c=>c.id).map(c=>`<option value="${c.id}">${c.name} (${c.pct}% of pixels)</option>`).join('')}
+$('#mmode').onchange=()=>$('#dropbox').style.display=$('#mmode').value==='drop'?'':'none';
+$('#mrun').onclick=async()=>{if(!R)return $('#mout').innerHTML='<p class="err">Run a photo in step 2 first.</p>';
+ const r=await fetch('/api/metrics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:R.token,mode:$('#mmode').value,drop:$('#mdrop').value})}),d=await r.json();
+ if(d.error)return $('#mout').innerHTML=`<p class="err">${d.error}</p>`;
+ $('#mout').innerHTML=`<div class="kpis"><div class="kpi">Pixel accuracy<b>${pct(d.acc)}</b></div><div class="kpi alt">Mean IoU<b>${pct(d.miou)}</b></div><div class="kpi alt">Mean Dice<b>${pct(d.mdice)}</b></div></div>
+ ${d.acc>.85&&d.miou<.7?'<div class="plain"><b>Keypoint:</b> accuracy still looks great, but mean IoU exposes what is missing. High pixel accuracy does not always mean good segmentation.</div>':''}
+ <div class="cards"><div class="card"><h3>Correct answer</h3><img src="${d.truth}" width="100%" style="border-radius:12px"></div><div class="card"><h3>Pretend answer with a mistake</h3><img src="${d.pred}" width="100%" style="border-radius:12px"></div>
+ <div class="card"><table><tr><th>Kind</th><th>IoU</th><th>Dice</th></tr>${d.rows.map(x=>`<tr><td>${x.name}</td><td><span class="mini"><b style="width:${x.iou*100}%"></b></span>${pct(x.iou)}</td><td>${pct(x.dice)}</td></tr>`).join('')}</table></div></div>
+ <div class="plain"><b>Note:</b> the computer's own answer is treated as the correct answer here, then damaged on purpose, to show how each score reacts.</div>`};
+/* ---- inside tab ---- */
+function shrink(){const b=$('#shrink');if(!R)return;b.innerHTML='';const W=170,H=Math.round(170*R.height/R.width);
+ const add=(t,fn)=>{const f=document.createElement('figure'),c=document.createElement('canvas');c.width=W;c.height=H;fn(c.getContext('2d'));f.appendChild(c);f.appendChild(document.createTextNode(t));b.appendChild(f)};
+ [[1,'Full size'],[3,'Smaller'],[8,'Smaller still'],[20,'Smallest: the summary']].forEach(([k,t])=>add(t,x=>{const s=document.createElement('canvas');s.width=Math.max(4,Math.round(R.width/k));s.height=Math.max(3,Math.round(R.height/k));s.getContext('2d').drawImage(IM.image,0,0,s.width,s.height);x.imageSmoothingEnabled=false;x.drawImage(s,0,0,W,H)}));
+ add('Grown back and colored',x=>{x.drawImage(IM.image,0,0,W,H);x.globalAlpha=.65;x.drawImage(IM.overlay,0,0,W,H)})}
+(function(){const cy=L=>60+60*L,hh=L=>110-18*L,ex=i=>30+95*i,dx=L=>410+95*(4-L),B=(x,y,w,h,f,t,c)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" fill="${f}"/><text x="${x+w/2}" y="${y+h/2+4}" text-anchor="middle" font-size="11" font-weight="700" fill="${c||'#fff'}">${t}</text>`,A=(a,b,c,d,dash)=>`<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="#101c40" stroke-width="2" ${dash?'stroke-dasharray="6 5"':''} marker-end="url(#ar)"/>`;
+ let o='<defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0L8,4L0,8z" fill="#101c40"/></marker></defs>';
+ o+='<text x="30" y="345" font-size="12" font-weight="700" fill="#101c40">Photo goes in</text><text x="620" y="345" font-size="12" font-weight="700" fill="#101c40">Colored map comes out</text><text x="300" y="332" font-size="12" fill="#101c40">dashed arrows = skip connections (shortcuts for detail)</text>';
+ for(let L=0;L<4;L++){const h=hh(L);o+=B(ex(L),cy(L)-h/2,60,h,'#101c40','Encode '+(L+1))+B(dx(L),cy(L)-h/2,60,h,'#8fa5c4','Decode '+(L+1),'#101c40')+A(ex(L)+60,cy(L),dx(L),cy(L),1);
+  o+=A(ex(L)+30,cy(L)+h/2,ex(L+1)+30,cy(L+1)-hh(L+1)/2)}
+ o+=B(ex(4),cy(4)-hh(4)/2,60,hh(4),'#4a5f8a','Bottleneck')+A(ex(4)+60,cy(4)-8,dx(3)+30,cy(3)+hh(3)/2);
+ for(let L=3;L>0;L--)o+=A(dx(L)+30,cy(L)-hh(L)/2,dx(L-1)+30,cy(L-1)+hh(L-1)/2);$('#svg').innerHTML=o})();
+</script></body></html>
